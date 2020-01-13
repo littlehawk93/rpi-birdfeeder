@@ -19,10 +19,30 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-package main
+package cmd
 
-import "github.com/littlehawk93/rpi-birdfeeder/cmd"
+import (
+	"log"
 
-func main() {
-	cmd.Execute()
+	"github.com/littlehawk93/rpi-birdfeeder/proc/watch"
+	"github.com/spf13/cobra"
+)
+
+// watchCmd represents the watch command
+var watchCmd = &cobra.Command{
+	Use:   "watch",
+	Short: "Capture videos or still images of birds landing on the bird feeder",
+	Long:  "The main service for running the rpi-birdfeeder application. This command causes the Pi to continually listen for motion detected on the bird feeder and captures short videos or images of the birds when they land.",
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if rootConfig == nil || rootConfig.WatchConfig == nil {
+			log.Fatalln("No watch process configuration parameters provided")
+		}
+
+		watch.Run(rootConfig.WatchConfig)
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(watchCmd)
 }

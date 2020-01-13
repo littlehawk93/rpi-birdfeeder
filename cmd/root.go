@@ -23,10 +23,17 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/littlehawk93/rpi-birdfeeder/conf"
+
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+var rootConfigFile string
+var rootConfig *conf.ApplicationConfig
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -45,4 +52,49 @@ func Execute() {
 
 func init() {
 
+	cobra.OnInitialize(onInitialize)
+	rootCmd.PersistentFlags().StringVarP(&rootConfigFile, "config", "c", "", "A valid rpi-birdfeeder configuration file")
+	rootCmd.MarkPersistentFlagRequired("config")
+}
+
+func onInitialize() {
+
+	parseConfig()
+
+	initializeLogger()
+}
+
+// parseConfig read the provided configuration file and unmarshal it into the global app configuration object
+func parseConfig() {
+
+	viper.SetConfigFile(rootConfigFile)
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file '%s': %s\n", rootConfigFile, err.Error())
+	}
+
+	rootConfig = &conf.ApplicationConfig{}
+
+	if err := viper.Unmarshal(rootConfig); err != nil {
+		log.Fatalf("Error parsing config file '%s': %s\n", rootConfigFile, err.Error())
+	}
+}
+
+// initializeLogger expects the rootAppConfig object to be populated. Initializes the global logger for the rpi-birdfeeder application
+func initializeLogger() {
+
+	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
+
+	if rootConfig != nil && rootConfig.LogConfig != nil && rootConfig.LogConfig.File != "" {
+
+		logFile, err := os.Create(rootConfig.LogConfig.File)
+
+		if err != nil {
+			log.Fatalf("Error opening log file '%s': %s\n", rootConfig.LogConfig.File, err.Error())
+		}
+
+		log.SetOutput(logFile)
+	} else {
+		log.SetOutput(os.Stderr)
+	}
 }
