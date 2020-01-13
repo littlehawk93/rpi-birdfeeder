@@ -6,5 +6,5 @@ This package contains all of the main logic for the various processes the rpi-bi
 
 ## Currently implemented Processes
 
-[watch](/proc/watch/README.md)
+[watch](/proc/watch)
 The main service responsible for watching for any birds landing on the birdfeeder using IR motion detection and capturing images and videos of them.  

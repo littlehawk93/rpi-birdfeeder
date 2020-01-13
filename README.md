@@ -13,7 +13,7 @@ More details concerning the particulars of buildign and deploying this codebase 
 
 ## Running
 
-rpi-birdfeeder is deisnged to support executing multiple processes. These processes can be selected to run using sub commands via the CLI. Further details on each process can be read on the [Processes README](/proc/README.md.)
+rpi-birdfeeder is deisnged to support executing multiple processes. These processes can be selected to run using sub commands via the CLI. Further details on each process can be read on the [Processes README](/proc ).
 
 ----
 
