@@ -20,22 +20,12 @@ func Run(config *model.WatchConfig) {
 
 	defer gpio.Close()
 
-	signalPin := gpio.NewPin(config.MotionSensor.SignalPin)
-	signalPin.Input()
+	pingSensor := model.NewPingSensor(config.RangeFinderSensor.EchoPin, config.RangeFinderSensor.TriggerPin)
 
-	signalPin.Watch(gpio.EdgeBoth, onPinEdgeDetected)
-	defer signalPin.Unwatch()
+	defer pingSensor.Close()
 
-	fmt.Scanln()
-}
-
-func onPinEdgeDetected(p *gpio.Pin) {
-
-	dateStr := time.Now().Format("1/2/06 03:04:05 PM")
-
-	if p.Read() == gpio.Low {
-		fmt.Printf("[%s] Pin %d LOW\n", dateStr, p.Pin())
-	} else {
-		fmt.Printf("[%s] Pin %d HIGH\n", dateStr, p.Pin())
+	for true {
+		fmt.Printf("%5.3f\n", pingSensor.Ping())
+		time.Sleep(500 * time.Millisecond)
 	}
 }
