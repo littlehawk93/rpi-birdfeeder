@@ -3,10 +3,10 @@ package watch
 import (
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/littlehawk93/rpi-birdfeeder/proc/watch/model"
+	"github.com/littlehawk93/rpi-birdfeeder/sensors/motion"
 	"github.com/warthog618/gpio"
 )
 
@@ -21,22 +21,14 @@ func Run(config *model.WatchConfig) {
 
 	defer gpio.Close()
 
-	pingSensor := model.NewPingSensor(config.RangeFinderSensor.EchoPin, config.RangeFinderSensor.TriggerPin)
+	motionSensor := motion.NewSensor(config.MotionSensor.SignalPin, onMotionDetected)
 
-	running := true
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	go func() {
-		for running {
-			fmt.Printf("%5.3f\n", pingSensor.Ping())
-			time.Sleep(1 * time.Second)
-		}
-		wg.Done()
-	}()
+	defer motionSensor.Close()
+	motionSensor.Begin()
 
 	fmt.Scanln()
-	running = false
-	wg.Wait()
+}
+
+func onMotionDetected() {
+	fmt.Printf("[%s] MOTION DETECTED\n", time.Now().Format("2006-01-02 3:04:05.9999"))
 }

@@ -1,21 +1,21 @@
-package model
+package motion
 
 import "github.com/warthog618/gpio"
 
-// MotionDetectedHandler event handler whenever the motion sensor detects motion
-type MotionDetectedHandler func()
+// DetectHandler event handler whenever the motion sensor detects motion
+type DetectHandler func()
 
-// MotionSensor handles interfacing with the SR501 PIR motion sensor
-type MotionSensor struct {
+// Sensor handles interfacing with the SR501 PIR motion sensor
+type Sensor struct {
 	closed    bool
 	listening bool
 	pin       *gpio.Pin
-	handler   MotionDetectedHandler
+	handler   DetectHandler
 }
 
 // Begin begin listening for motion using the motion sensor.
 // Any subsequent 'Begin' calls are ignored
-func (me *MotionSensor) Begin() {
+func (me *Sensor) Begin() {
 	if !me.listening && !me.closed {
 		me.pin.Watch(gpio.EdgeRising, func(p *gpio.Pin) {
 			me.handler()
@@ -24,7 +24,7 @@ func (me *MotionSensor) Begin() {
 }
 
 // Close closes the underlying gpio connections to the referenced pins
-func (me *MotionSensor) Close() {
+func (me *Sensor) Close() {
 	if !me.closed {
 		me.pin.Unwatch()
 		me.closed = true
@@ -32,9 +32,9 @@ func (me *MotionSensor) Close() {
 	}
 }
 
-// NewMotionSensor creates and initializes a new Motion Sensor
-func NewMotionSensor(pin int, handler MotionDetectedHandler) *MotionSensor {
-	return &MotionSensor{
+// NewSensor creates and initializes a new Motion Sensor
+func NewSensor(pin int, handler DetectHandler) *Sensor {
+	return &Sensor{
 		listening: false,
 		closed:    false,
 		pin:       gpio.NewPin(pin),
