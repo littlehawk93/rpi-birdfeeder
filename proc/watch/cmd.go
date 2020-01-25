@@ -3,6 +3,7 @@ package watch
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/littlehawk93/rpi-birdfeeder/proc/watch/model"
@@ -22,10 +23,20 @@ func Run(config *model.WatchConfig) {
 
 	pingSensor := model.NewPingSensor(config.RangeFinderSensor.EchoPin, config.RangeFinderSensor.TriggerPin)
 
-	defer pingSensor.Close()
+	running := true
 
-	for true {
-		fmt.Printf("%5.3f\n", pingSensor.Ping())
-		time.Sleep(500 * time.Millisecond)
-	}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		for running {
+			fmt.Printf("%5.3f\n", pingSensor.Ping())
+			time.Sleep(1 * time.Second)
+		}
+		wg.Done()
+	}()
+
+	fmt.Scanln()
+	running = false
+	wg.Wait()
 }
