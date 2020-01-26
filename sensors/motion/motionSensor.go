@@ -1,43 +1,39 @@
 package motion
 
-import "github.com/warthog618/gpio"
+import (
+	"periph.io/x/periph/conn/gpio"
+	"periph.io/x/periph/conn/gpio/gpioreg"
+)
 
 // DetectHandler event handler whenever the motion sensor detects motion
 type DetectHandler func()
 
 // Sensor handles interfacing with the SR501 PIR motion sensor
 type Sensor struct {
-	closed    bool
-	listening bool
-	pin       *gpio.Pin
-	handler   DetectHandler
+	pin     gpio.PinIO
+	handler DetectHandler
 }
 
 // Begin begin listening for motion using the motion sensor.
 // Any subsequent 'Begin' calls are ignored
 func (me *Sensor) Begin() {
-	if !me.listening && !me.closed {
-		me.pin.Watch(gpio.EdgeRising, func(p *gpio.Pin) {
+	go func() {
+		for me.pin.WaitForEdge(-1) {
 			me.handler()
-		})
-	}
-}
-
-// Close closes the underlying gpio connections to the referenced pins
-func (me *Sensor) Close() {
-	if !me.closed {
-		me.pin.Unwatch()
-		me.closed = true
-		me.listening = false
-	}
+		}
+	}()
 }
 
 // NewSensor creates and initializes a new Motion Sensor
-func NewSensor(pin int, handler DetectHandler) *Sensor {
-	return &Sensor{
-		listening: false,
-		closed:    false,
-		pin:       gpio.NewPin(pin),
-		handler:   handler,
+func NewSensor(pin string, handler DetectHandler) (*Sensor, error) {
+	s := &Sensor{
+		pin:     gpioreg.ByName(pin),
+		handler: handler,
 	}
+
+	if err := s.pin.In(gpio.PullDown, gpio.RisingEdge); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }

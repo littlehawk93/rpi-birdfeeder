@@ -5,27 +5,22 @@ import (
 	"log"
 	"time"
 
-	"github.com/littlehawk93/rpi-birdfeeder/proc/watch/model"
+	"github.com/littlehawk93/rpi-birdfeeder/conf"
 	"github.com/littlehawk93/rpi-birdfeeder/sensors/motion"
-	"github.com/warthog618/gpio"
 )
 
-// Run generates the "main" function for the watch process
-func Run(config *model.WatchConfig) {
+// Run the "main" function for the watch process
+func Run(config *conf.ApplicationConfig) {
 
-	err := gpio.Open()
+	watchConfig := config.WatchConfig
+
+	motionSensor, err := motion.NewSensor(watchConfig.MotionSensor.SignalPin, onMotionDetected)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Error initializing motion sensor: %s\n", err.Error())
 	}
 
-	defer gpio.Close()
-
-	motionSensor := motion.NewSensor(config.MotionSensor.SignalPin, onMotionDetected)
-
-	defer motionSensor.Close()
 	motionSensor.Begin()
-
 	fmt.Scanln()
 }
 

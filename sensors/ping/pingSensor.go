@@ -1,11 +1,12 @@
 package ping
 
 import (
-	"fmt"
 	"math"
 	"time"
 
-	"github.com/warthog618/gpio"
+	"periph.io/x/periph/conn/gpio/gpioreg"
+
+	"periph.io/x/periph/conn/gpio"
 )
 
 const (
@@ -20,72 +21,56 @@ const (
 
 // Sensor handles interfacing with the SR04 ultrasonic ping sensor
 type Sensor struct {
-	echo        *gpio.Pin
-	trig        *gpio.Pin
-	closed      bool
-	listening   bool
-	trigChannel chan time.Time
+	echo gpio.PinIO
+	trig gpio.PinIO
 }
 
 // Ping sends a ping signal and attempts to return the measured distance, in meters.
-// Returns math.NaN() if no signal is returned within the expected time frame (2cm <= distance <= 500cm) or if this sensor has already been closed
-func (me *Sensor) Ping() float64 {
+// Returns math.NaN() if no signal is returned within the expected time frame (2cm <= distance <= 500cm) or if this sensor has already been closed.
+// Returns an error if there was any communication errors with the ping sensor
+func (me *Sensor) Ping() (float64, error) {
 
-	if me.closed {
-		return math.NaN()
+	if err := me.trig.Out(gpio.High); err != nil {
+		return 0, err
 	}
 
-	me.listening = true
-	me.trig.High()
 	time.Sleep(5 * time.Microsecond)
-	me.trig.Low()
+
+	if err := me.trig.Out(gpio.Low); err != nil {
+		return 0, err
+	}
 
 	start := time.Now()
 
-	select {
-	case t := <-me.trigChannel:
-		me.listening = false
-		return t.Sub(start).Seconds() * speedOfSound / 2.0
-	case <-time.After(echoTimeoutMillis * time.Millisecond):
-		me.listening = false
-		return math.NaN()
+	if me.trig.WaitForEdge(echoTimeoutMillis * time.Millisecond) {
+		return time.Now().Sub(start).Seconds() * speedOfSound / 2.0, nil
 	}
 
-	me.listening = false
-	return math.NaN()
+	return math.NaN(), nil
 }
 
 // Close cleans up any allocated GPIO resources to run this sensor.
 // Multiple calls to this method are safe.
 func (me *Sensor) Close() {
-	if !me.closed {
-		me.closed = true
-		close(me.trigChannel)
-		me.echo.Unwatch()
-	}
+	me.trig.Halt()
 }
 
-func (me *Sensor) onPingReceived(p *gpio.Pin) {
+// NewSensor creates and initializes a new Ping Sensor.
+// Returns the new sensor or any errors from attempting to create it
+func NewSensor(echo, trig string) (*Sensor, error) {
 
-	if me.listening && !me.closed {
-		me.trigChannel <- time.Now()
-		fmt.Printf("[%s] PING DETECTED", time.Now().Format("2006-01-02 3:04:05.9999 PM"))
-	}
-}
-
-// NewSensor creates and initializes a new Ping Sensor
-func NewSensor(echo, trig int) *Sensor {
 	p := &Sensor{
-		echo:        gpio.NewPin(echo),
-		trig:        gpio.NewPin(trig),
-		closed:      false,
-		listening:   false,
-		trigChannel: make(chan time.Time),
+		echo: gpioreg.ByName(echo),
+		trig: gpioreg.ByName(trig),
 	}
-	p.trig.Output()
-	p.trig.Low()
 
-	p.echo.Watch(gpio.EdgeRising, p.onPingReceived)
+	if err := p.trig.Out(gpio.Low); err != nil {
+		return nil, err
+	}
+
+	if err := p.echo.In(gpio.PullDown, gpio.RisingEdge); err != nil {
+		return nil, err
+	}
 	time.Sleep(echoTimeoutMillis * time.Millisecond)
-	return p
+	return p, nil
 }

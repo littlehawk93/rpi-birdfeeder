@@ -8,3 +8,6 @@ This package contains all of the main logic for the various processes the rpi-bi
 
 [watch](/proc/watch)
 The main service responsible for watching for any birds landing on the birdfeeder using IR motion detection and capturing images and videos of them.  
+
+[powermon](/proc/powermon)
+Continually monitors power consumption and battery level and reports it to an InfluxDB instance.

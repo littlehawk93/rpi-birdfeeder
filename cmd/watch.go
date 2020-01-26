@@ -22,8 +22,6 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"log"
-
 	"github.com/littlehawk93/rpi-birdfeeder/proc/watch"
 	"github.com/spf13/cobra"
 )
@@ -33,14 +31,7 @@ var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "Capture videos or still images of birds landing on the bird feeder",
 	Long:  "The main service for running the rpi-birdfeeder application. This command causes the Pi to continually listen for motion detected on the bird feeder and captures short videos or images of the birds when they land.",
-	Run: func(cmd *cobra.Command, args []string) {
-
-		if rootConfig == nil || rootConfig.WatchConfig == nil {
-			log.Fatalln("No watch process configuration parameters provided")
-		}
-
-		watch.Run(rootConfig.WatchConfig)
-	},
+	Run:   buildProcess(watch.Run),
 }
 
 func init() {

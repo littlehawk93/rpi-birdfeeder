@@ -27,6 +27,8 @@ import (
 	"os"
 
 	"github.com/littlehawk93/rpi-birdfeeder/conf"
+	"github.com/littlehawk93/rpi-birdfeeder/proc"
+	"periph.io/x/periph/host"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -62,6 +64,8 @@ func onInitialize() {
 	parseConfig()
 
 	initializeLogger()
+
+	initializePeriphIO()
 }
 
 // parseConfig read the provided configuration file and unmarshal it into the global app configuration object
@@ -77,6 +81,19 @@ func parseConfig() {
 
 	if err := viper.Unmarshal(rootConfig); err != nil {
 		log.Fatalf("Error parsing config file '%s': %s\n", rootConfigFile, err.Error())
+	}
+}
+
+// buildProcess constructs a valid command function for cobra using a sub process function from the /proc package
+func buildProcess(f proc.CommandProcess) func(cmd *cobra.Command, args []string) {
+
+	return func(cmd *cobra.Command, args []string) {
+
+		if rootConfig == nil {
+			log.Fatalln("No watch process configuration parameters provided")
+		}
+
+		f(rootConfig)
 	}
 }
 
@@ -96,5 +113,12 @@ func initializeLogger() {
 		log.SetOutput(logFile)
 	} else {
 		log.SetOutput(os.Stderr)
+	}
+}
+
+// initializePeriphIO initializes periph.IO host drivers for I2C and GPIO interfacing
+func initializePeriphIO() {
+	if _, err := host.Init(); err != nil {
+		log.Fatalf("Error initializing Periph.IO Host drivers: %s\n", err.Error())
 	}
 }

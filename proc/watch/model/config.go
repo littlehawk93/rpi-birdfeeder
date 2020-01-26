@@ -2,13 +2,13 @@ package model
 
 // MotionSensorConfig configuration parameters for the IR motion detection sensor
 type MotionSensorConfig struct {
-	SignalPin int `mapstructure:"signal"`
+	SignalPin string `mapstructure:"signal"`
 }
 
 // RangeFinderConfig configuration parameters fro the ultrasonic rangefinder sensor
 type RangeFinderConfig struct {
-	EchoPin    int `mapstructure:"echo"`
-	TriggerPin int `mapstructure:"trigger"`
+	EchoPin    string `mapstructure:"echo"`
+	TriggerPin string `mapstructure:"trigger"`
 }
 
 // WatchConfig configuration parameters for the Watch process. Configuration parameters are expected to not frequently change between application launches.
