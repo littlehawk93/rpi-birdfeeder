@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	influx "github.com/influxdata/influxdb1-client"
+
 	"github.com/littlehawk93/rpi-birdfeeder/conf"
 	"github.com/littlehawk93/rpi-birdfeeder/sensors/power"
 )
@@ -14,25 +16,53 @@ func Run(config *conf.ApplicationConfig) {
 
 	powerConfig := config.PowerMonConfig
 
-	powerSensor, err := power.NewSensor(powerConfig.PowerSensor.Address, powerConfig.PowerSensor.Bus)
+	db, err := config.InfluxConfig.CreateClient()
+
+	if err != nil {
+		log.Fatalf("Unable to connect to InfluxDB: %s\n", err.Error())
+	}
+
+	ps, err := power.NewSensor(powerConfig.PowerSensor.Address, powerConfig.PowerSensor.Bus)
 
 	if err != nil {
 		log.Fatalf("Error initializing INA219 sensor: %s\n", err.Error())
 	}
 
-	defer powerSensor.Close()
+	defer ps.Close()
 
 	running := true
 
 	go func() {
 		for running {
 
-			if err := printSensorValues([]string{"Bus Voltage (V)", "Shunt Voltage (mV)", "Current (mA)", "Power (mW)"}, powerSensor.GetBusVoltage, powerSensor.GetShuntVoltage, powerSensor.GetCurrent, powerSensor.GetPower); err != nil {
-				powerSensor.Close()
-				log.Fatalf("Error reading sensor value: %s\n", err.Error())
+			bp, err := generateBatchPoints(config.InfluxConfig.Database, config.InfluxConfig.Measurement, config.InfluxConfig.Tags, []string{"Bus Voltage", "Current Draw", "Power Draw"}, ps.GetBusVoltage, ps.GetCurrent, ps.GetPower)
+
+			if err != nil {
+				ps.Close()
+				log.Fatalf("Unable to read sensor value(s): %s\n", err.Error())
+			}
+
+			if res, err := db.Write(bp); err != nil || (res != nil && res.Error() != nil) {
+				ps.Close()
+
+				if err != nil {
+					log.Fatalf("Unable to write Influx data points: %s\n", err.Error())
+				} else {
+					log.Fatalf("Unable to write Influx data points: %s\n", res.Error().Error())
+				}
+			}
+
+			if err = ps.SetPowerSavingMode(true); err != nil {
+				ps.Close()
+				log.Fatalf("Unable to enable INA219 Power Saving Mode: %s\n", err.Error())
 			}
 
 			time.Sleep(time.Duration(powerConfig.RefreshIntervalSeconds) * time.Second)
+
+			if err = ps.SetPowerSavingMode(false); err != nil {
+				ps.Close()
+				log.Fatalf("Unable to disable INA219 Power Saving Mode: %s\n", err.Error())
+			}
 		}
 	}()
 
@@ -40,19 +70,29 @@ func Run(config *conf.ApplicationConfig) {
 	running = false
 }
 
-func printSensorValues(labels []string, funcs ...func() (float64, error)) error {
+func generateBatchPoints(db, measurement string, tags map[string]string, labels []string, funcs ...func() (float64, error)) (influx.BatchPoints, error) {
+
+	bp := influx.BatchPoints{
+		Database: db,
+		Points: []influx.Point{
+			influx.Point{
+				Time:        time.Now(),
+				Measurement: measurement,
+				Tags:        tags,
+				Fields:      make(map[string]interface{}),
+			},
+		},
+	}
 
 	for i, f := range funcs {
-
 		val, err := f()
 
 		if err != nil {
-			return err
+			return bp, err
 		}
 
-		fmt.Printf("%s: %6.3f\n", labels[i], val)
+		bp.Points[0].Fields[labels[i]] = val
 	}
-	fmt.Println()
 
-	return nil
+	return bp, nil
 }
