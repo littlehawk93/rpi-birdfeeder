@@ -1,7 +1,6 @@
 package powermon
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -30,44 +29,37 @@ func Run(config *conf.ApplicationConfig) {
 
 	defer ps.Close()
 
-	running := true
+	for true {
 
-	go func() {
-		for running {
+		bp, err := generateBatchPoints(config.InfluxConfig.Database, config.InfluxConfig.Measurement, config.InfluxConfig.Tags, []string{"Bus Voltage", "Current Draw", "Power Draw"}, ps.GetBusVoltage, ps.GetCurrent, ps.GetPower)
 
-			bp, err := generateBatchPoints(config.InfluxConfig.Database, config.InfluxConfig.Measurement, config.InfluxConfig.Tags, []string{"Bus Voltage", "Current Draw", "Power Draw"}, ps.GetBusVoltage, ps.GetCurrent, ps.GetPower)
+		if err != nil {
+			ps.Close()
+			log.Fatalf("Unable to read sensor value(s): %s\n", err.Error())
+		}
+
+		if res, err := db.Write(bp); err != nil || (res != nil && res.Error() != nil) {
+			ps.Close()
 
 			if err != nil {
-				ps.Close()
-				log.Fatalf("Unable to read sensor value(s): %s\n", err.Error())
-			}
-
-			if res, err := db.Write(bp); err != nil || (res != nil && res.Error() != nil) {
-				ps.Close()
-
-				if err != nil {
-					log.Fatalf("Unable to write Influx data points: %s\n", err.Error())
-				} else {
-					log.Fatalf("Unable to write Influx data points: %s\n", res.Error().Error())
-				}
-			}
-
-			if err = ps.SetPowerSavingMode(true); err != nil {
-				ps.Close()
-				log.Fatalf("Unable to enable INA219 Power Saving Mode: %s\n", err.Error())
-			}
-
-			time.Sleep(time.Duration(powerConfig.RefreshIntervalSeconds) * time.Second)
-
-			if err = ps.SetPowerSavingMode(false); err != nil {
-				ps.Close()
-				log.Fatalf("Unable to disable INA219 Power Saving Mode: %s\n", err.Error())
+				log.Fatalf("Unable to write Influx data points: %s\n", err.Error())
+			} else {
+				log.Fatalf("Unable to write Influx data points: %s\n", res.Error().Error())
 			}
 		}
-	}()
 
-	fmt.Scanln()
-	running = false
+		if err = ps.SetPowerSavingMode(true); err != nil {
+			ps.Close()
+			log.Fatalf("Unable to enable INA219 Power Saving Mode: %s\n", err.Error())
+		}
+
+		time.Sleep(time.Duration(powerConfig.RefreshIntervalSeconds) * time.Second)
+
+		if err = ps.SetPowerSavingMode(false); err != nil {
+			ps.Close()
+			log.Fatalf("Unable to disable INA219 Power Saving Mode: %s\n", err.Error())
+		}
+	}
 }
 
 func generateBatchPoints(db, measurement string, tags map[string]string, labels []string, funcs ...func() (float64, error)) (influx.BatchPoints, error) {
