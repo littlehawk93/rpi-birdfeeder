@@ -1,4 +1,4 @@
-# watch
+# powermon
 
 ```
 $> rpi-birdfeeder powermon
