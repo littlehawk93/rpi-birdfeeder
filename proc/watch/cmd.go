@@ -3,9 +3,12 @@ package watch
 import (
 	"fmt"
 	"log"
-	"time"
+	"os"
+	"path/filepath"
 
+	"github.com/dhowden/raspicam"
 	"github.com/littlehawk93/rpi-birdfeeder/conf"
+	"github.com/littlehawk93/rpi-birdfeeder/proc/watch/model"
 	"github.com/littlehawk93/rpi-birdfeeder/sensors/motion"
 )
 
@@ -14,7 +17,7 @@ func Run(config *conf.ApplicationConfig) {
 
 	watchConfig := config.WatchConfig
 
-	motionSensor, err := motion.NewSensor(watchConfig.MotionSensor.SignalPin, onMotionDetected)
+	motionSensor, err := motion.NewSensor(watchConfig.MotionSensor.SignalPin, makeOnMotionDetected(config.WatchConfig.CameraConfig, config.WatchConfig.OutputFolder))
 
 	if err != nil {
 		log.Fatalf("Error initializing motion sensor: %s\n", err.Error())
@@ -24,6 +27,29 @@ func Run(config *conf.ApplicationConfig) {
 	fmt.Scanln()
 }
 
-func onMotionDetected() {
-	fmt.Printf("[%s] MOTION DETECTED\n", time.Now().Format("2006-01-02 3:04:05.9999"))
+func makeOnMotionDetected(config *model.CameraConfig, outputDir string) func() {
+
+	return func() {
+		c := make(chan error)
+
+		go func() {
+			for err := range c {
+				log.Printf("CAMERA ERROR: %s\n", err.Error())
+			}
+		}()
+
+		s := config.AsStill()
+
+		fileName := filepath.Join(outputDir, "CAPTURE.jpg")
+
+		f, err := os.Create(fileName)
+
+		if err != nil {
+			log.Fatalf("Unable to create file '%s': %s\n", fileName, err.Error())
+		}
+
+		defer f.Close()
+
+		raspicam.Capture(s, f, c)
+	}
 }

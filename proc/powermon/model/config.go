@@ -4,6 +4,8 @@ package model
 type PowerMonConfig struct {
 	RefreshIntervalSeconds int                `mapstructure:"refresh_interval"`
 	PowerSensor            *PowerSensorConfig `mapstructure:"power_sensor"`
+	InfluxMeasurement      string             `mapstructure:"measurement"`
+	InfluxTags             map[string]string  `mapstructure:"tags"`
 }
 
 // PowerSensorConfig configuration parameters for the INA219 power sensor

@@ -31,7 +31,7 @@ func Run(config *conf.ApplicationConfig) {
 
 	for true {
 
-		bp, err := generateBatchPoints(config.InfluxConfig.Database, config.InfluxConfig.Measurement, config.InfluxConfig.Tags, []string{"Bus Voltage", "Current Draw", "Power Draw"}, ps.GetBusVoltage, ps.GetCurrent, ps.GetPower)
+		bp, err := generateBatchPoints(config.InfluxConfig.Database, config.PowerMonConfig.InfluxMeasurement, config.PowerMonConfig.InfluxTags, []string{"Bus Voltage", "Current Draw", "Power Draw"}, ps.GetBusVoltage, ps.GetCurrent, ps.GetPower)
 
 		if err != nil {
 			ps.Close()
