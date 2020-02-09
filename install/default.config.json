@@ -1,0 +1,39 @@
+{
+    "watch": {
+        "motion_sensor": {
+            "signal": "17"
+        },
+        "output_dir": "/root/birdfeeder-images",
+        "min_capture_interval": 10,
+        "camera": {
+            "capture_interval": 1,
+            "capture_count": 5,
+            "saturation": 10,
+            "brightness": 50,
+            "contrast": 10,
+            "sharpness": 10,
+            "quality": 75,
+            "ev": 0
+        }
+    },
+    "powermon": {
+        "power_sensor": {
+            "address": 64
+        },
+        "refresh_interval": 2,
+        "measurement": "powerstats",
+        "tags": {
+            "host": "rpi-birdfeeder",
+            "sensor": "ina219"
+        }
+    },
+    "influx": {
+        "db": "",
+        "host": "",
+        "user": "",
+        "pass": ""
+    },
+    "log": {
+        "file": ""
+    }
+}

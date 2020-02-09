@@ -27,3 +27,5 @@
 
 # Ignore any custom configuration files for the application
 *.config.*
+
+!install/default.config.json

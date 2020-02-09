@@ -1,0 +1,15 @@
+[Unit]
+Description=rpi birdfeeder watching & camera control service
+After=network.target
+StartLimitBurst=10
+StartLimitIntervalSec=120
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=60
+User=root
+ExecStart=/usr/bin/rpi-birdfeeder --config /etc/rpi-birdfeeder/config.json watch
+
+[Install]
+WantedBy=multi-user.target
