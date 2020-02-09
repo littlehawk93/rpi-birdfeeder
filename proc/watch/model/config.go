@@ -20,10 +20,11 @@ type RangeFinderConfig struct {
 // WatchConfig configuration parameters for the Watch process. Configuration parameters are expected to not frequently change between application launches.
 // The values are provided via a configuration file rather than through the command line
 type WatchConfig struct {
-	MotionSensor      *MotionSensorConfig `mapstructure:"motion_sensor"`
-	RangeFinderSensor *RangeFinderConfig  `mapstructure:"range_finder"`
-	CameraConfig      *CameraConfig       `mapstructure:"camera"`
-	OutputFolder      string              `mapstructure:"output_dir"`
+	MotionSensor              *MotionSensorConfig `mapstructure:"motion_sensor"`
+	RangeFinderSensor         *RangeFinderConfig  `mapstructure:"range_finder"`
+	CameraConfig              *CameraConfig       `mapstructure:"camera"`
+	OutputFolder              string              `mapstructure:"output_dir"`
+	MinCaptureIntervalSeconds int                 `mapstructure:"min_capture_interval"`
 }
 
 // CameraConfig configuration parameters for the raspberry pi camera.
@@ -43,7 +44,7 @@ func (me CameraConfig) AsStill() *raspicam.Still {
 
 	s := raspicam.NewStill()
 
-	s.Timeout = time.Millisecond * time.Duration(me.CaptureIntervalMillis)
+	s.Timeout = time.Duration(me.CaptureIntervalCount) * time.Millisecond * time.Duration(me.CaptureIntervalMillis)
 	s.Timelapse = me.CaptureIntervalCount
 
 	s.Preview = raspicam.Preview{
