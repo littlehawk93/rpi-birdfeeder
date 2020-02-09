@@ -1,6 +1,6 @@
 package model
 
-import "github.com/littlehawk93/rpi-birdfeeder/sensors/camera"
+import "github.com/littlehawk93/rpi-birdfeeder/camera"
 
 // MotionSensorConfig configuration parameters for the IR motion detection sensor
 type MotionSensorConfig struct {

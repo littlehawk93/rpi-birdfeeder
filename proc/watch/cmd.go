@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/littlehawk93/go-sr501"
+	"github.com/littlehawk93/rpi-birdfeeder/camera"
 	"github.com/littlehawk93/rpi-birdfeeder/conf"
 	"github.com/littlehawk93/rpi-birdfeeder/proc/watch/model"
-	"github.com/littlehawk93/rpi-birdfeeder/sensors/camera"
 )
 
 // Run the "main" function for the watch process
