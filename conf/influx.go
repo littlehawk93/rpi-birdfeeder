@@ -8,12 +8,10 @@ import (
 
 // InfluxConfig configuration parameters for writing data to InfluxDB
 type InfluxConfig struct {
-	Database    string            `mapstructure:"db"`
-	Measurement string            `mapstructure:"measurement"`
-	Hostname    string            `mapstructure:"host"`
-	Username    string            `mapstructure:"user"`
-	Password    string            `mapstructure:"pass"`
-	Tags        map[string]string `mapstructure:"tags"`
+	Database string `mapstructure:"db"`
+	Hostname string `mapstructure:"host"`
+	Username string `mapstructure:"user"`
+	Password string `mapstructure:"pass"`
 }
 
 // CreateClient creates a new Influx DB client based on this config's properties
