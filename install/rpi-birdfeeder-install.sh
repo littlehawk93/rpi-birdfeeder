@@ -2,7 +2,7 @@
 
 wget --output-document="/usr/bin/rpi-birdfeeder" https://raw.githubusercontent.com/littlehawk93/rpi-birdfeeder/install/install/rpi-birdfeeder
 
-if [ -f "/etc/rpi-birdfeeder" ] && [ -d "/etc/rpi-birdfeeder"]; then
+if [ -f "/etc/rpi-birdfeeder" ] && [ -d "/etc/rpi-birdfeeder" ]; then
     echo "Config folder already exists"
 else
     mkdir /etc/rpi-birdfeeder
