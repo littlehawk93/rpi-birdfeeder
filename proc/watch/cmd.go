@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dhowden/raspicam"
 	"github.com/littlehawk93/rpi-birdfeeder/conf"
 	"github.com/littlehawk93/rpi-birdfeeder/proc/watch/model"
+	"github.com/littlehawk93/rpi-birdfeeder/sensors/camera"
 	"github.com/littlehawk93/rpi-birdfeeder/sensors/motion"
 )
 
@@ -50,27 +50,11 @@ func makeOnMotionDetected(config *model.WatchConfig, lastCapture *time.Time) fun
 
 			log.Printf("Motion detected: capturing %d images\n", config.CameraConfig.CaptureIntervalCount)
 
-			c := make(chan error)
-
-			go func() {
-				for err := range c {
-					log.Printf("CAMERA ERROR: %s\n", err.Error())
-				}
-			}()
-
-			s := cameraCfg.AsStill()
-
 			fileName := createFileName(outputDir)
 
-			f, err := os.Create(fileName)
-
-			if err != nil {
-				log.Fatalf("Unable to create file '%s': %s\n", fileName, err.Error())
+			if err := camera.CaptureTimelapse(fileName, cameraCfg); err != nil {
+				log.Fatalf("Error capturing timelapse images:\n%s\n", err.Error())
 			}
-
-			defer f.Close()
-
-			raspicam.Capture(s, f, c)
 
 			*lastCapture = time.Now()
 		} else {
@@ -80,5 +64,5 @@ func makeOnMotionDetected(config *model.WatchConfig, lastCapture *time.Time) fun
 }
 
 func createFileName(dir string) string {
-	return filepath.Join(dir, strings.Join([]string{time.Now().Format("20060102030405"), "CAPTURE", "%04d.jpg"}, "_"))
+	return filepath.Join(dir, strings.Join([]string{time.Now().Format("0601020304"), "CAPTURE", "%02d.jpg"}, "_"))
 }
