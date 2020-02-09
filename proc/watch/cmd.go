@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	motion "github.com/littlehawk93/go-sr501"
 	"github.com/littlehawk93/rpi-birdfeeder/conf"
 	"github.com/littlehawk93/rpi-birdfeeder/proc/watch/model"
 	"github.com/littlehawk93/rpi-birdfeeder/sensors/camera"
-	"github.com/littlehawk93/rpi-birdfeeder/sensors/motion"
 )
 
 // Run the "main" function for the watch process
@@ -21,13 +21,15 @@ func Run(config *conf.ApplicationConfig) {
 
 	watchConfig := config.WatchConfig
 
-	motionSensor, err := motion.NewSensor(watchConfig.MotionSensor.SignalPin, makeOnMotionDetected(watchConfig, &lastCapture))
+	sensor, err := motion.NewSensor(watchConfig.MotionSensor.SignalPin, makeOnMotionDetected(watchConfig, &lastCapture))
 
 	if err != nil {
 		log.Fatalf("Error initializing motion sensor: %s\n", err.Error())
 	}
 
-	motionSensor.Begin()
+	defer sensor.Close()
+
+	sensor.Begin()
 	fmt.Scanln()
 }
 
