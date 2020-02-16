@@ -29,9 +29,30 @@ func Run(config *conf.ApplicationConfig) {
 
 	defer ps.Close()
 
+	sps, err := power.NewSensor(powerConfig.SolarPowerSensor.Address, powerConfig.SolarPowerSensor.Bus)
+
+	if err != nil {
+		log.Fatalf("Error initializing solar INA219 sensor: %s\n", err.Error())
+	}
+
+	defer sps.Close()
+
+	sensors := []power.Sensor{*ps, *sps}
+
+	labels := []string{"Bus Voltage", "Current Draw", "Power Draw", "Solar Bus Voltage", "Solar Current Draw", "Solar Power Draw"}
+
+	funcs := []func() (float64, error){
+		ps.GetBusVoltage,
+		ps.GetCurrent,
+		ps.GetPower,
+		reverseSensorReading(sps.GetBusVoltage),
+		reverseSensorReading(sps.GetCurrent),
+		sps.GetPower,
+	}
+
 	for true {
 
-		bp, err := generateBatchPoints(config.InfluxConfig.Database, config.InfluxConfig.Measurement, config.InfluxConfig.Tags, []string{"Bus Voltage", "Current Draw", "Power Draw"}, ps.GetBusVoltage, ps.GetCurrent, ps.GetPower)
+		bp, err := generateBatchPoints(config.InfluxConfig.Database, config.PowerMonConfig.Measurement, config.PowerMonConfig.Tags, labels, funcs...)
 
 		if err != nil {
 			ps.Close()
@@ -48,17 +69,41 @@ func Run(config *conf.ApplicationConfig) {
 			}
 		}
 
-		if err = ps.SetPowerSavingMode(true); err != nil {
+		if err = setPowerSavingMode(true, sensors); err != nil {
 			ps.Close()
+			sps.Close()
 			log.Fatalf("Unable to enable INA219 Power Saving Mode: %s\n", err.Error())
 		}
 
 		time.Sleep(time.Duration(powerConfig.RefreshIntervalSeconds) * time.Second)
 
-		if err = ps.SetPowerSavingMode(false); err != nil {
+		if err = setPowerSavingMode(false, sensors); err != nil {
 			ps.Close()
+			sps.Close()
 			log.Fatalf("Unable to disable INA219 Power Saving Mode: %s\n", err.Error())
 		}
+	}
+}
+
+func setPowerSavingMode(enabled bool, sensors []power.Sensor) error {
+
+	for _, s := range sensors {
+		if err := s.SetPowerSavingMode(enabled); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func reverseSensorReading(f func() (float64, error)) func() (float64, error) {
+
+	return func() (float64, error) {
+		val, err := f()
+
+		if err != nil {
+			return val, err
+		}
+		return val * -1.0, nil
 	}
 }
 
