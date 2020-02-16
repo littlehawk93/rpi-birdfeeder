@@ -6,8 +6,8 @@ import (
 
 	influx "github.com/influxdata/influxdb1-client"
 
+	"github.com/littlehawk93/go-ina219"
 	"github.com/littlehawk93/rpi-birdfeeder/conf"
-	"github.com/littlehawk93/rpi-birdfeeder/sensors/power"
 )
 
 // Run the "main" function for the powermon process
@@ -21,7 +21,7 @@ func Run(config *conf.ApplicationConfig) {
 		log.Fatalf("Unable to connect to InfluxDB: %s\n", err.Error())
 	}
 
-	ps, err := power.NewSensor(powerConfig.PowerSensor.Address, powerConfig.PowerSensor.Bus)
+	ps, err := ina219.NewSensor(powerConfig.PowerSensor.Address, powerConfig.PowerSensor.Bus)
 
 	if err != nil {
 		log.Fatalf("Error initializing INA219 sensor: %s\n", err.Error())
