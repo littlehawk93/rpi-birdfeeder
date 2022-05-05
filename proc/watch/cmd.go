@@ -17,6 +17,8 @@ import (
 // Run the "main" function for the watch process
 func Run(config *conf.ApplicationConfig) {
 
+	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
+
 	lastCapture := time.Now()
 
 	watchConfig := config.WatchConfig
